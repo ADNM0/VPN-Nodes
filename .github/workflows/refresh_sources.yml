@@ -47,8 +47,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SOURCE_SEARCH_TOKEN || github.token }}
         run: |
           python scripts/refresh_sources.py \
-            --hours 24 --max-repos 500 --max-requests 6500 \
-            --api-reserve 200 --output "$RUNNER_TEMP/source-refresh"
+            --hours 24 --max-repos 800 --max-discovery-resources 240 \
+            --max-requests 6500 --api-reserve 200 --output "$RUNNER_TEMP/source-refresh"
 
       - name: Commit source changes to the private repository only
         shell: bash
