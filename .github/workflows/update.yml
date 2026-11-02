@@ -24,6 +24,10 @@ jobs:
     timeout-minutes: 20
     outputs:
       pipeline_revision: ${{ steps.pin.outputs.revision }}
+      core_matrix: ${{ steps.pin.outputs.core_matrix }}
+      core_parallelism: ${{ steps.pin.outputs.core_parallelism }}
+      speed_matrix: ${{ steps.pin.outputs.speed_matrix }}
+      speed_parallelism: ${{ steps.pin.outputs.speed_parallelism }}
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
@@ -36,7 +40,11 @@ jobs:
     - name: Pin private source once
       id: pin
       shell: bash
-      run: echo "revision=$(git -C catalog-source rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      run: "echo \"revision=$(git -C catalog-source rev-parse HEAD)\" >> \"$GITHUB_OUTPUT\"\npython3 - <<'PY' >> \"$GITHUB_OUTPUT\"\nimport json,sys\n\
+        from pathlib import Path\nsys.path.insert(0, str(Path(\"catalog-source/scripts/xray_matrix\").resolve()))\nfrom owned_core import MATRIX_SHARDS\n\
+        from speed_ranking import POLICY\nfor stage, count in ((\"core\", MATRIX_SHARDS), (\"speed\", POLICY[\"shards\"])):\n    if type(count)\
+        \ is not int or not 1 <= count <= 256:\n        raise ValueError(\"Invalid pinned pipeline shard count\")\n    print(stage + \"_matrix=\"\
+        \ + json.dumps(list(range(count)), separators=(\",\", \":\")))\n    print(stage + \"_parallelism=\" + str(count))\nPY\n"
     - uses: ./catalog-source/.github/actions/catalog
       with:
         stage: owned-core
@@ -75,17 +83,9 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      max-parallel: 8
+      max-parallel: ${{ fromJSON(needs.owned-core.outputs.core_parallelism) }}
       matrix:
-        shard:
-        - 0
-        - 1
-        - 2
-        - 3
-        - 4
-        - 5
-        - 6
-        - 7
+        shard: ${{ fromJSON(needs.owned-core.outputs.core_matrix) }}
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
@@ -137,17 +137,9 @@ jobs:
     continue-on-error: true
     strategy:
       fail-fast: false
-      max-parallel: 8
+      max-parallel: ${{ fromJSON(needs.owned-core.outputs.speed_parallelism) }}
       matrix:
-        shard:
-        - 0
-        - 1
-        - 2
-        - 3
-        - 4
-        - 5
-        - 6
-        - 7
+        shard: ${{ fromJSON(needs.owned-core.outputs.speed_matrix) }}
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
