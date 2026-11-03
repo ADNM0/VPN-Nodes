@@ -42,9 +42,11 @@ jobs:
       shell: bash
       run: "echo \"revision=$(git -C catalog-source rev-parse HEAD)\" >> \"$GITHUB_OUTPUT\"\npython3 - <<'PY' >> \"$GITHUB_OUTPUT\"\nimport json,sys\n\
         from pathlib import Path\nsys.path.insert(0, str(Path(\"catalog-source/scripts/xray_matrix\").resolve()))\nfrom owned_core import MATRIX_SHARDS\n\
-        from speed_ranking import POLICY\nfor stage, count in ((\"core\", MATRIX_SHARDS), (\"speed\", POLICY[\"shards\"])):\n    if type(count)\
-        \ is not int or not 1 <= count <= 256:\n        raise ValueError(\"Invalid pinned pipeline shard count\")\n    print(stage + \"_matrix=\"\
-        \ + json.dumps(list(range(count)), separators=(\",\", \":\")))\n    print(stage + \"_parallelism=\" + str(count))\nPY\n"
+        try:\n    from tcp_ping_ranking import POLICY\nexcept ModuleNotFoundError as error:\n    if error.name != \"tcp_ping_ranking\":\n    \
+        \    raise\n    from speed_ranking import POLICY  # Immutable download-era pinned runs.\nfor stage, count in ((\"core\", MATRIX_SHARDS),\
+        \ (\"speed\", POLICY[\"shards\"])):\n    if type(count) is not int or not 1 <= count <= 256:\n        raise ValueError(\"Invalid pinned\
+        \ pipeline shard count\")\n    print(stage + \"_matrix=\" + json.dumps(list(range(count)), separators=(\",\", \":\")))\n    print(stage\
+        \ + \"_parallelism=\" + str(count))\nPY\n"
     - uses: ./catalog-source/.github/actions/catalog
       with:
         stage: owned-core
@@ -105,13 +107,14 @@ jobs:
         shard: ${{ matrix.shard }}
   speed-prepare:
     if: ${{ !inputs.publish_run_id }}
-    name: Prepare unique successful nodes for speed ranking
+    name: Prepare unique successful nodes for TCP ranking
     needs:
     - candidates
     - core-check
     - owned-core
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    continue-on-error: true
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
@@ -128,7 +131,7 @@ jobs:
         node_key: ${{ secrets.VPN_NODES_ARTIFACT_KEY_B64 }}
   speed-check:
     if: ${{ !inputs.publish_run_id }}
-    name: Download speed (${{ matrix.shard }})
+    name: A1 TCP Ping (${{ matrix.shard }})
     needs:
     - speed-prepare
     - owned-core
@@ -155,6 +158,8 @@ jobs:
         private_revision: ${{ needs.owned-core.outputs.pipeline_revision }}
         node_key: ${{ secrets.VPN_NODES_ARTIFACT_KEY_B64 }}
         core_key: ${{ secrets.VPN_CORE_ARTIFACT_KEY_B64 }}
+        a1_key: ${{ secrets.A1_TCP_PING_SSH_KEY }}
+        a1_known_hosts: ${{ secrets.A1_TCP_PING_KNOWN_HOSTS }}
         shard: ${{ matrix.shard }}
   publish:
     needs:
@@ -163,8 +168,8 @@ jobs:
     - speed-prepare
     - speed-check
     - owned-core
-    if: ${{ always() && !cancelled() && (inputs.publish_run_id || (needs.candidates.result == 'success' && needs.core-check.result == 'success'
-      && needs.speed-prepare.result == 'success')) }}
+    if: ${{ always() && !cancelled() && (inputs.publish_run_id || (needs.candidates.result == 'success' && needs.core-check.result == 'success'))
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
