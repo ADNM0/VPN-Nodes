@@ -65,7 +65,7 @@ jobs:
             git fetch origin main
             git switch --detach FETCH_HEAD
             python scripts/refresh_sources.py --apply-plan "$RUNNER_TEMP/source-refresh/plan.json"
-            git add -- sources/sources.json sources/source_refresh_state.json
+            git add -u -- sources/
             if git diff --cached --quiet; then
               exit 0
             fi
