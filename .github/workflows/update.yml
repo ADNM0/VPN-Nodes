@@ -72,6 +72,7 @@ jobs:
         private_revision: ${{ needs.owned-core.outputs.pipeline_revision }}
         node_key: ${{ secrets.VPN_NODES_ARTIFACT_KEY_B64 }}
         core_key: ${{ secrets.VPN_CORE_ARTIFACT_KEY_B64 }}
+        megav_key: ${{ secrets.MEGAV_CATALOG_KEY_B64 }}
   core-check:
     if: ${{ !inputs.publish_run_id }}
     needs:
