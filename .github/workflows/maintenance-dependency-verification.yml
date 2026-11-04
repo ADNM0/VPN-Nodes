@@ -1,0 +1,53 @@
+name: Temporary maintenance dependency verification
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      with:
+        repository: noorelmostafa11-pixel/VPN-Nodes-Private
+        ref: 39d39409cd453bc5d9e3425fa3ace0a10d659515
+        ssh-key: ${{ secrets.VPN_NODES_PRIVATE_WRITE_KEY }}
+        path: private-source
+        persist-credentials: false
+    - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+      with:
+        python-version: '3.12'
+    - name: Verify maintenance with only its existing dependencies
+      working-directory: private-source
+      shell: bash
+      run: 'set -euo pipefail
+
+        python -m venv "$RUNNER_TEMP/maintenance-env"
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" -m pip install requests==2.32.5 PyYAML==6.0.2 beautifulsoup4==4.13.5
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" -c "import importlib.util; assert importlib.util.find_spec(''cryptography'')
+        is None"
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" tests/test_refresh_sources.py
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" tests/test_source_integrity.py
+
+        '
+    - name: Verify reader and collection integration with normal collection dependencies
+      working-directory: private-source
+      shell: bash
+      run: 'set -euo pipefail
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" -m pip install -r requirements.txt
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" tests/test_megav_adapter.py
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" tests/test_pekpik_static.py
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" tests/test_source_pipeline.py
+
+        "$RUNNER_TEMP/maintenance-env/bin/python" tests/test_pipeline_topology.py
+
+        '
