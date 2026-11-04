@@ -26,8 +26,6 @@ jobs:
       pipeline_revision: ${{ steps.pin.outputs.revision }}
       core_matrix: ${{ steps.pin.outputs.core_matrix }}
       core_parallelism: ${{ steps.pin.outputs.core_parallelism }}
-      speed_matrix: ${{ steps.pin.outputs.speed_matrix }}
-      speed_parallelism: ${{ steps.pin.outputs.speed_parallelism }}
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
@@ -42,9 +40,9 @@ jobs:
       shell: bash
       run: "echo \"revision=$(git -C catalog-source rev-parse HEAD)\" >> \"$GITHUB_OUTPUT\"\npython3 - <<'PY' >> \"$GITHUB_OUTPUT\"\nimport json,sys\n\
         from pathlib import Path\nsys.path.insert(0, str(Path(\"catalog-source/scripts/xray_matrix\").resolve()))\nfrom owned_core import MATRIX_SHARDS\n\
-        from speed_ranking import POLICY\nfor stage, count in ((\"core\", MATRIX_SHARDS), (\"speed\", POLICY[\"shards\"])):\n    if type(count)\
-        \ is not int or not 1 <= count <= 256:\n        raise ValueError(\"Invalid pinned pipeline shard count\")\n    print(stage + \"_matrix=\"\
-        \ + json.dumps(list(range(count)), separators=(\",\", \":\")))\n    print(stage + \"_parallelism=\" + str(count))\nPY\n"
+        for stage, count in ((\"core\", MATRIX_SHARDS),):\n    if type(count) is not int or not 1 <= count <= 256:\n        raise ValueError(\"\
+        Invalid pinned pipeline shard count\")\n    print(stage + \"_matrix=\" + json.dumps(list(range(count)), separators=(\",\", \":\")))\n\
+        \    print(stage + \"_parallelism=\" + str(count))\nPY\n"
     - uses: ./catalog-source/.github/actions/catalog
       with:
         stage: owned-core
@@ -103,68 +101,13 @@ jobs:
         core_key: ${{ secrets.VPN_CORE_ARTIFACT_KEY_B64 }}
         country_url: ${{ secrets.VPN_COUNTRY_URL }}
         shard: ${{ matrix.shard }}
-  speed-prepare:
-    if: ${{ !inputs.publish_run_id }}
-    name: Prepare unique successful nodes for speed ranking
-    needs:
-    - candidates
-    - core-check
-    - owned-core
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-    - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      with:
-        repository: noorelmostafa11-pixel/VPN-Nodes-Private
-        ssh-key: ${{ secrets.VPN_NODES_PRIVATE_READ_KEY }}
-        ref: ${{ needs.owned-core.outputs.pipeline_revision }}
-        path: catalog-source
-        fetch-depth: 0
-        persist-credentials: false
-    - uses: ./catalog-source/.github/actions/catalog
-      with:
-        stage: speed-prepare
-        private_revision: ${{ needs.owned-core.outputs.pipeline_revision }}
-        node_key: ${{ secrets.VPN_NODES_ARTIFACT_KEY_B64 }}
-  speed-check:
-    if: ${{ !inputs.publish_run_id }}
-    name: Download speed (${{ matrix.shard }})
-    needs:
-    - speed-prepare
-    - owned-core
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    continue-on-error: true
-    strategy:
-      fail-fast: false
-      max-parallel: ${{ fromJSON(needs.owned-core.outputs.speed_parallelism) }}
-      matrix:
-        shard: ${{ fromJSON(needs.owned-core.outputs.speed_matrix) }}
-    steps:
-    - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      with:
-        repository: noorelmostafa11-pixel/VPN-Nodes-Private
-        ssh-key: ${{ secrets.VPN_NODES_PRIVATE_READ_KEY }}
-        ref: ${{ needs.owned-core.outputs.pipeline_revision }}
-        path: catalog-source
-        fetch-depth: 0
-        persist-credentials: false
-    - uses: ./catalog-source/.github/actions/catalog
-      with:
-        stage: speed-check
-        private_revision: ${{ needs.owned-core.outputs.pipeline_revision }}
-        node_key: ${{ secrets.VPN_NODES_ARTIFACT_KEY_B64 }}
-        core_key: ${{ secrets.VPN_CORE_ARTIFACT_KEY_B64 }}
-        shard: ${{ matrix.shard }}
   publish:
     needs:
     - candidates
     - core-check
-    - speed-prepare
-    - speed-check
     - owned-core
-    if: ${{ always() && !cancelled() && (inputs.publish_run_id || (needs.candidates.result == 'success' && needs.core-check.result == 'success'
-      && needs.speed-prepare.result == 'success')) }}
+    if: ${{ always() && !cancelled() && (inputs.publish_run_id || (needs.candidates.result == 'success' && needs.core-check.result == 'success'))
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
