@@ -1,0 +1,45 @@
+name: Temporary private SSH access verification
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+    - name: Verify configured keys and read private main ref only
+      env:
+        READ_KEY: ${{ secrets.VPN_NODES_PRIVATE_READ_KEY }}
+        WRITE_KEY: ${{ secrets.VPN_NODES_PRIVATE_WRITE_KEY }}
+      shell: python3 {0}
+      run: "import base64, hashlib, json, os, pathlib, shlex, subprocess, tempfile,\
+        \ urllib.request\nexpected = {\n    'read': 'SHA256:in5LDYUEnEy3o+sdcPmeEubPMNJqd7Fwm/Y8+FdA/rI',\n\
+        \    'write': 'SHA256:uco6E3QaaSTcmgq05Mm8XLeZMAL59Qexba+LX+xNgsQ',\n}\nwith\
+        \ urllib.request.urlopen('https://api.github.com/meta', timeout=20) as response:\n\
+        \    host_keys = json.load(response)['ssh_keys']\nwith tempfile.TemporaryDirectory(prefix='verify-private-ssh-')\
+        \ as temporary:\n    directory = pathlib.Path(temporary)\n    known = directory\
+        \ / 'known_hosts'\n    known.write_text(''.join('github.com ' + key + '\\\
+        n' for key in host_keys))\n    results = []\n    for role, fingerprint in\
+        \ expected.items():\n        key = directory / role\n        value = os.environ[role.upper()\
+        \ + '_KEY'].replace('\\r\\n', '\\n').strip() + '\\n'\n        key.write_text(value)\n\
+        \        key.chmod(0o600)\n        public = subprocess.run(['ssh-keygen',\
+        \ '-y', '-P', '', '-f', str(key)], capture_output=True)\n        valid = public.returncode\
+        \ == 0\n        actual = ''\n        if valid:\n            actual = 'SHA256:'\
+        \ + base64.b64encode(hashlib.sha256(base64.b64decode(public.stdout.split()[1])).digest()).decode().rstrip('=')\n\
+        \        result = {'role': role, 'private_key_format_valid': valid, 'matches_registered_deploy_key':\
+        \ actual == fingerprint}\n        if valid and actual == fingerprint:\n  \
+        \          command = ['ssh', '-i', str(key), '-o', 'IdentitiesOnly=yes', '-o',\
+        \ 'BatchMode=yes',\n                       '-o', 'ConnectTimeout=20', '-o',\
+        \ 'StrictHostKeyChecking=yes',\n                       '-o', 'UserKnownHostsFile='\
+        \ + str(known)]\n            environment = os.environ.copy()\n           \
+        \ environment['GIT_SSH_COMMAND'] = shlex.join(command)\n            attempt\
+        \ = subprocess.run(['git', 'ls-remote', 'git@github.com:noorelmostafa11-pixel/VPN-Nodes-Private.git',\n\
+        \                                      'refs/heads/main'], env=environment,\
+        \ capture_output=True, timeout=45)\n            result['ssh_repository_access']\
+        \ = attempt.returncode == 0 and bool(attempt.stdout.strip())\n           \
+        \ result['permission_denied'] = b'Permission denied (publickey)' in attempt.stderr\n\
+        \        results.append(result)\n        print(json.dumps(result), flush=True)\n\
+        \    assert all(item.get('ssh_repository_access') for item in results), 'SSH\
+        \ access verification failed; no repository content changed'\n"
+
