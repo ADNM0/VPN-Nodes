@@ -114,6 +114,9 @@ jobs:
       contents: read
       actions: read
     steps:
+    - name: Reserve time for signing and publication
+      shell: bash
+      run: echo "A1_RANK_DEADLINE=$(( $(date +%s) + 2400 ))" >> "$GITHUB_ENV"
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
         path: runner-source
@@ -149,3 +152,5 @@ jobs:
         source_private_revision: ${{ steps.context.outputs.source_pipeline_revision }}
         legacy_source: ${{ steps.context.outputs.legacy_source }}
         signing_key: ${{ secrets.CATALOG_SIGNING_PRIVATE_KEY_B64 }}
+        core_key: ${{ secrets.VPN_CORE_ARTIFACT_KEY_B64 }}
+        a1_ssh_key: ${{ secrets.A1_REAL_DELAY_SSH_KEY }}
