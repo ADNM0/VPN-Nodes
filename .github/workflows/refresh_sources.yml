@@ -53,7 +53,7 @@ jobs:
           SOURCE_LARGE_WORKERS: 2
         run: |
           python scripts/refresh_sources.py \
-            --hours 24 --workers 24 --repository-workers 12 --page-workers 12 --max-repos 800 --max-discovery-resources 240 \
+            --hours 36 --workers 24 --repository-workers 12 --page-workers 12 --max-repos 800 --max-discovery-resources 240 \
             --max-requests 6500 --api-reserve 200 --output "$RUNNER_TEMP/source-refresh"
 
       - name: Commit source changes to the private repository only
