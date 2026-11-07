@@ -17,7 +17,6 @@ jobs:
   maintain:
     if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
     steps:
       - name: Check out private maintenance implementation and source data
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -54,7 +53,7 @@ jobs:
         run: |
           python scripts/refresh_sources.py \
             --hours 36 --workers 24 --repository-workers 12 --page-workers 12 --max-repos 800 --max-discovery-resources 240 \
-            --max-requests 6500 --api-reserve 200 --output "$RUNNER_TEMP/source-refresh"
+            --api-reserve 200 --output "$RUNNER_TEMP/source-refresh"
 
       - name: Commit source changes to the private repository only
         shell: bash
