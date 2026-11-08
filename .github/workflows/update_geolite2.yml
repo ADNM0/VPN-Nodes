@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
-        repository: noorelmostafa11-pixel/VPN-Nodes-Private
+        repository: AMES88/VPN-Nodes-Private
         ssh-key: ${{ secrets.VPN_NODES_PRIVATE_WRITE_KEY }}
         ref: main
         path: catalog-source
