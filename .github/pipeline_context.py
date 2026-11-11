@@ -9,8 +9,8 @@ import urllib.parse
 import urllib.request
 import zipfile
 
-PUBLIC = 'AMES88/VPN-Nodes'
-PRIVATE = 'AMES88/VPN-Nodes-Private'
+PUBLIC = 'ADNM0/VPN-Nodes'
+PRIVATE = 'ADNM0/VPN-Nodes-Private'
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):

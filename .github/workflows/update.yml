@@ -29,7 +29,7 @@ jobs:
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
-        repository: AMES88/VPN-Nodes-Private
+        repository: ADNM0/VPN-Nodes-Private
         ssh-key: ${{ secrets.VPN_NODES_PRIVATE_READ_KEY }}
         ref: main
         path: catalog-source
@@ -60,7 +60,7 @@ jobs:
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
-        repository: AMES88/VPN-Nodes-Private
+        repository: ADNM0/VPN-Nodes-Private
         ssh-key: ${{ secrets.VPN_NODES_PRIVATE_READ_KEY }}
         ref: ${{ needs.owned-core.outputs.pipeline_revision }}
         path: catalog-source
@@ -88,7 +88,7 @@ jobs:
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
-        repository: AMES88/VPN-Nodes-Private
+        repository: ADNM0/VPN-Nodes-Private
         ssh-key: ${{ secrets.VPN_NODES_PRIVATE_READ_KEY }}
         ref: ${{ needs.owned-core.outputs.pipeline_revision }}
         path: catalog-source
@@ -133,7 +133,7 @@ jobs:
       run: python3 runner-source/.github/pipeline_context.py
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       with:
-        repository: AMES88/VPN-Nodes-Private
+        repository: ADNM0/VPN-Nodes-Private
         ssh-key: ${{ secrets.VPN_NODES_PRIVATE_WRITE_KEY }}
         ref: ${{ inputs.publish_run_id && 'main' || steps.context.outputs.pipeline_revision }}
         path: catalog-source
