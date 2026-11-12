@@ -55,7 +55,7 @@ jobs:
     if: ${{ !inputs.publish_run_id }}
     needs:
     - owned-core
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -78,7 +78,7 @@ jobs:
     needs:
     - candidates
     - owned-core
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -109,7 +109,7 @@ jobs:
     - owned-core
     if: ${{ always() && !cancelled() && (inputs.publish_run_id || (needs.candidates.result == 'success' && needs.core-check.result == 'success'))
       }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
